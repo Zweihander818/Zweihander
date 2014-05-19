@@ -1,8 +1,8 @@
-float x, y; //変数にyを追加
+float x, y;
 void setup() {
-  size(200, 200);
+  size(500,500 );
   x = 0;
-  y = height/2; //yの初期値を画面の中央にする
+  y = height/2; 
 }
 
 void draw() {
@@ -10,7 +10,8 @@ void draw() {
   x += 100;
   if (x > width) { 
     x = -10;
-    y = random(width - 10); //正方形が画面内に収まる範囲で、yの値をランダムに設定
+    y = random(width - 10); 
+    
   }
   rect(x, y, 10, 10);
 }
