@@ -1,0 +1,379 @@
+//
+//  GameScene.m
+//  審査会作品４
+//
+//  Created by ito seiya on 2015/02/03.
+//  Copyright (c) 2015年 ito seiya. All rights reserved.
+//
+
+#import "GameScene.h"
+#import "ResultScene.h"
+
+@implementation GameScene {
+
+    CGPoint		_StartPt;
+
+    BOOL        _GO;
+    BOOL		_gameOver;
+    BOOL		_acceleON;
+    BOOL        _touchON;
+    BOOL        _Scene;
+    BOOL        _Other;
+    CGPoint		_touchPoint;
+    
+    CGFloat		_speed;
+    CGFloat     _enemySpeed;
+    SKEmitterNode *_particleSpark;
+    
+    
+}
+
+-(void)didMoveToView:(SKView *)view {
+    self.anchorPoint = CGPointMake(0.5, 0.5);
+    _Scene = YES;
+    _GO    = YES;
+   
+    
+    SKNode	*roadNode = [SKNode node];
+    roadNode.name = kRoadName;
+
+    
+   /* SKSpriteNode *sky;
+    sky = [SKSpriteNode spriteNodeWithImageNamed:@"sky"];
+    sky.name = kRoadViewName;
+    
+    sky = [SKSpriteNode spriteNodeWithImageNamed:@"sky"];
+    sky.position = CGPointMake(0, sky.size.height);
+    sky.name = kRoadViewName;
+   */ 
+    SKSpriteNode *zibunn = [SKSpriteNode spriteNodeWithImageNamed:@"zero"];
+    zibunn.name = kPlayerName;
+    zibunn.physicsBody = [SKPhysicsBody bodyWithRectangleOfSize:zibunn.size];
+    zibunn.physicsBody.affectedByGravity = NO;//重力適用なし
+    zibunn.physicsBody.allowsRotation = NO;	//衝突による角度変更なし
+    
+    zibunn.xScale = 0.2;
+    zibunn.yScale = 0.2;
+    zibunn.position = CGPointMake(0, 250);
+    _StartPt = zibunn.position;//初期位置を記録
+    //カテゴリー（プレイヤー)
+    zibunn.physicsBody.categoryBitMask = playerCategory;
+    //接触できるオブジェクト（壁／その他の車）
+    zibunn.physicsBody.collisionBitMask =  otherCategory;
+  
+    //ヒットテストするオブジェクト（壁／その他の車
+    
+    
+
+    
+    SKAction *makeOther = [SKAction sequence:
+                           @[[SKAction performSelector:@selector(addOther) onTarget:self],
+                             [SKAction waitForDuration:1.5 withRange:1.0]]];
+    [self runAction : [SKAction repeatActionForever:makeOther]];
+    
+    
+
+    
+    SKSpriteNode *enemy = [SKSpriteNode spriteNodeWithImageNamed:@"enemy"];
+    enemy.name = kEnemyName;
+    enemy.position = CGPointMake(0, -700);
+    enemy.physicsBody = [SKPhysicsBody bodyWithRectangleOfSize:CGSizeMake(enemy.frame.size.width / 2, enemy.frame.size.height / 8 -180) ];
+    enemy.physicsBody.affectedByGravity = NO;
+    enemy.physicsBody.allowsRotation = NO;
+    enemy.xScale = 0.75;
+    enemy.yScale = 0.75;
+    
+    SKTexture *enemy1 = [SKTexture textureWithImageNamed:@"enemy"];
+    SKTexture *enemy2 = [SKTexture textureWithImageNamed:@"enemy2"];
+    
+    SKAction *action = [SKAction animateWithTextures:@[enemy1,enemy2] timePerFrame:0.2];
+    
+    SKAction *Action = [SKAction repeatActionForever:action];
+    
+    //カテゴリー（プレイヤー)
+    enemy.physicsBody.categoryBitMask = enemyCategory;
+    //接触できるオブジェクト（壁／その他の車）
+    enemy.physicsBody.collisionBitMask =  playerCategory ;
+    //ヒットテストするオブジェクト（壁／その他の車）
+    enemy.physicsBody.contactTestBitMask =  playerCategory;
+
+    [enemy runAction:Action];
+    
+    //走行距離
+    SKLabelNode *scoreTitleNode = [SKLabelNode labelNodeWithFontNamed:@"Baskerville-Bold"];
+    scoreTitleNode.fontSize = 30;
+    scoreTitleNode.text = @"逃げた距離";
+    scoreTitleNode.fontColor = [UIColor redColor];
+    scoreTitleNode.position = CGPointMake(scoreTitleNode.frame.size.width / 2 - 180,
+                                          self.frame.size.height / 2 -30);
+    SKLabelNode	*scoreNode = [SKLabelNode labelNodeWithFontNamed:@"Baskerville-Bold"];
+    scoreNode.name = kDistLabelName;
+    scoreNode.fontSize = 30;
+    scoreNode.position = CGPointMake(50, (self.frame.size.height) / 2 -30);
+    
+    SKLabelNode *GO = [SKLabelNode labelNodeWithFontNamed:@"Baskerville-Bold"];
+    GO.fontSize = 55;
+    GO.text = @"GO! GO! GO!";
+    GO.position = CGPointMake(0, self.frame.size.height / 2 + 160);
+    GO.fontColor = [UIColor redColor];
+    GO.name = kGoName;
+    NSArray	*actions = @[[SKAction fadeAlphaTo:0.0 duration:0.75],
+                         [SKAction fadeAlphaTo:3.0 duration:0.75]];
+    SKAction *ac = [SKAction repeatActionForever:[SKAction sequence:actions]];
+    [GO runAction:ac];
+
+    
+    
+    
+    [roadNode addChild:zibunn];
+    [roadNode addChild:enemy];
+    [roadNode addChild:GO];
+   
+
+    [self addChild:roadNode];
+    [self addChild:scoreTitleNode];
+    [self addChild:scoreNode];
+    self.physicsWorld.contactDelegate = self;
+
+  }
+
+- (void)didSimulatePhysics {
+    SKNode *sky = [self childNodeWithName:kRoadName];
+    SKSpriteNode *player = (SKSpriteNode *)[sky childNodeWithName:kPlayerName];
+    SKSpriteNode *enemy = (SKSpriteNode *)[sky childNodeWithName:kEnemyName];
+
+        if (_acceleON) {
+        //加速
+        _speed += 15;
+        if (_speed > 500) {
+            _speed = 500;  //最高速度
+        }
+    } else {
+        //減速
+        _speed -= 10;
+        if (_speed < 0) {
+            _speed = 10;
+        }
+    }
+    
+    CGFloat	x = sin(player.zRotation);
+    CGFloat	y = cos(player.zRotation);
+    
+    //ベクトルを加える
+    player.physicsBody.velocity = CGVectorMake(- (_speed * x), (_speed * y));
+    
+    if (_touchON) {
+        //加速
+        _enemySpeed += 55;
+        if (_enemySpeed > 520) {
+            _enemySpeed = 520;  //最高速度
+        }
+    } else {
+            }
+   enemy.physicsBody.velocity = CGVectorMake(- (_enemySpeed * x), (_enemySpeed * y));
+
+
+    
+
+    //プレイヤーの位置に合わせてオートスクロール
+    //画面の中心にあるべき　road　上の座標　（player　から見て１００上）
+    CGPoint centerPt = CGPointMake(player.position.x, player.position.y + 100);
+    //centerPt が、road からどれだけズレているか
+    //前回の　didSimulatePhysics　以来　player　が移動したため。
+    //(diff = differense = 差）
+    CGPoint diff = [self convertPoint:centerPt fromNode:sky];
+    //シーン上で道路ノードの位置を変更する。　（ズレを補正した新しい　position　を　road　に設定し直す）
+    sky.position = CGPointMake(0, sky.position.y - diff.y);
+    
+      self.distance = (player.position.y - _StartPt.y) / 100;
+    SKLabelNode *dist = (SKLabelNode *)[self childNodeWithName:kDistLabelName];
+    dist.text = [NSString stringWithFormat:@"%.0f m", self.distance];
+
+}
+
+- (void) addOther {
+    if (_gameOver) {
+        return;
+    }
+    if (_speed > 200) {
+        //プレイヤーを検索
+        SKNode *road = [self childNodeWithName:kRoadName];
+        SKSpriteNode *player = (SKSpriteNode *)[road childNodeWithName:kPlayerName];
+        SKSpriteNode *other = [SKSpriteNode spriteNodeWithImageNamed:@"Other.png"];
+        //速度をランダムに作成してuserDataに保存する
+        other.userData = [@{ @"speed":@( skRand(200, 400) )} mutableCopy];
+        //横位置をランダム、プレイヤーカーの１画面分上に配置する
+        other.position = CGPointMake(skRand(-100, 100),
+                                   player.position.y + self.size.height);
+        other.name = kOtherName;
+        other.xScale = 0.5;
+        other.yScale = 0.5;
+        
+        other.physicsBody = [SKPhysicsBody bodyWithRectangleOfSize:other.size];
+        other.physicsBody.affectedByGravity = NO;  //重力適用なし
+        other.physicsBody.restitution = NO;
+        other.physicsBody.dynamic = NO;
+        [road addChild:other];
+        //接触設定
+        //カテゴリー（その他の車）
+        other.physicsBody.categoryBitMask = otherCategory;
+        //接触できるオブジェクト
+        other.physicsBody.collisionBitMask = playerCategory;
+        //ヒットテストするオブジェクト
+        other.physicsBody.contactTestBitMask = playerCategory;
+       
+    }
+    
+}
+static inline CGFloat skRand(CGFloat low, CGFloat high) {
+    CGFloat	res = skRandf() * (high - low) + low;
+    return res;
+}
+
+static inline CGFloat skRandf() {
+    return rand() / (CGFloat) RAND_MAX;
+}
+#pragma mark - SKPhysicsContactDelegate
+
+-(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent*)event  {
+    SKNode *road = [self childNodeWithName:kRoadName];
+    _Other    = YES;
+    
+
+
+    if (_gameOver) {
+                //タッチ通知
+       
+    } else {
+        //タッチダウンした位置を記録してフラグを立てる
+        UITouch *touch = [touches anyObject];
+        _touchPoint = [touch locationInNode:self];
+        _acceleON = YES;
+        _touchON  = YES;
+        _GO       = NO;
+        
+    }
+    if (_Scene == NO) {
+        SKScene *scene = [[ResultScene alloc]initWithSize:self.size];
+        SKTransition *tr = [SKTransition fadeWithDuration:0.5];
+        [self.view presentScene:scene transition:tr];
+
+    }
+    if (_GO == NO) {
+        SKLabelNode *Go = (SKLabelNode *)[road childNodeWithName:kGoName];
+        [Go removeFromParent];
+     }
+    }
+- (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event {
+    if (_gameOver == NO ) {
+        //タッチダウンした位置からプレイヤーカーの更新角度を求める
+        UITouch *touch = [touches anyObject];
+        CGPoint	location = [touch locationInNode:self];
+        CGFloat	len = fabs(_touchPoint.x - location.x);
+        CGFloat	factor = (len / 80) > 1.0 ? 1.0 : (len / 80);
+        CGFloat	angle = 0;
+        //最大２５度回転
+        if (_touchPoint.x - location.x > 0) {
+            angle = (M_PI / 180) * 25 * factor;      //左
+        } else {
+            angle = -((M_PI / 180) * 25 * factor);   //右
+        }
+        //プレイヤーカーを検索
+        SKNode *road = [self childNodeWithName:kRoadName];
+        SKSpriteNode *player =
+        (SKSpriteNode *)[road childNodeWithName:kPlayerName];
+        player.zRotation = angle;
+       
+    }
+}
+
+- (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event {
+    //フラグを下ろす
+    _acceleON = NO;
+}
+
+
+
+-(void)update:(CFTimeInterval)currentTime {
+   
+}
+
+-(void)didBeginContact:(SKPhysicsContact *)contact {
+    SKNode *road = [self childNodeWithName:kRoadName];
+    _Other = NO;
+    NSString *bodyNameB = contact.bodyB.node.name;
+    NSString *bodyNameA = contact.bodyA.node.name;
+
+   // CGPoint correctContactPoint = CGPointMake(contact.contactPoint.x - self.frame.size.width * self.anchorPoint.x,
+                                             //contact.contactPoint.y - self.frame.size.height * self.anchorPoint.y);
+        
+
+    //その他に接触
+    if ([bodyNameB isEqualToString:kEnemyName]) {
+      //  SKNode	*road = [self childNodeWithName:kRoadName];
+     //   CGPoint pt = [self convertPoint:contact.contactPoint toNode:road];
+      //  [self makeSparkParticle:pt];
+        
+    
+      
+    
+        //ゲームオーバー
+        [self showGameOver];
+        _gameOver = NO;
+    }
+    if([bodyNameA isEqualToString:kOtherName]) {
+    
+    
+    if(_Other == NO) {
+        SKSpriteNode*other = (SKSpriteNode *)[road childNodeWithName:kOtherName];
+        other.hidden = YES;
+        
+       }
+    }
+    
+
+
+}
+
+- (void)showGameOver {
+    
+        if (_gameOver == NO) {
+            _gameOver = YES;				//ゲームオーバーフラグ
+            
+            //プレイヤーを検索
+            SKNode	*road = [self childNodeWithName:kRoadName];
+            SKSpriteNode *player = (SKSpriteNode *)[road childNodeWithName:kPlayerName];
+            self.physicsWorld.speed = 0;	//物理シミュレーション停止
+            
+
+            SKLabelNode *gameOverLabel = [SKLabelNode labelNodeWithFontNamed:@"Baskerville-Bold"];
+            gameOverLabel.text = @"GAME OVER";
+            gameOverLabel.fontSize = 40;
+            gameOverLabel.position = CGPointMake(0 , player.position.y + 160);
+            
+            gameOverLabel.fontColor = [UIColor redColor];
+            [road addChild:gameOverLabel];
+            _Scene = NO;
+            player.hidden = YES;
+        }
+
+    }
+//スパークパーティクル作成
+
+/*- (void)makeSparkParticle:(CGPoint)point {
+    if(_particleSpark==nil){
+        SKNode*		road = [self childNodeWithName:kRoadName];
+        NSString *path = [[NSBundle mainBundle] pathForResource:@"Spark" ofType:@"sks"];
+        _particleSpark = [NSKeyedUnarchiver unarchiveObjectWithFile:path];
+        _particleSpark.numParticlesToEmit = 100;
+        [road addChild:_particleSpark];
+        
+    } else {
+        [_particleSpark resetSimulation];
+    }
+    _particleSpark.position = point;
+}
+
+*/
+                                              
+@end
