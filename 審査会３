@@ -1,0 +1,96 @@
+//
+//  SeScene.m
+//  審査会作品４
+//
+//  Created by ito seiya on 2015/02/19.
+//  Copyright (c) 2015年 ito seiya. All rights reserved.
+//
+
+#import "SeScene.h"
+#import "GameScene.h"
+#import "Hard.h"
+
+@implementation SeScene {
+    SKLabelNode *EASY;
+    SKLabelNode *HARD;
+
+}
+
+-(void)didMoveToView:(SKView *)view {
+    
+    SKSpriteNode *zako = [SKSpriteNode spriteNodeWithImageNamed:@"zero"];
+    zako.position = CGPointMake(self.frame.size.width / 2,
+                                self.frame.size.height / 2 - 40);
+    zako.xScale = 0.4;
+    zako.yScale = 0.4;
+    
+    SKLabelNode *te = [SKLabelNode labelNodeWithFontNamed:@"Baskerville-Bold"];
+    te.text = @"この世界では弱い者は,";
+    te.position = CGPointMake(self.frame.size.width / 2 - 20,
+                              self.frame.size.height / 2 + 150);
+    te.fontSize = 32;
+    te.fontColor = [UIColor blackColor];
+    
+    SKLabelNode *te2 = [SKLabelNode labelNodeWithFontNamed:@"Baskerville-Bold"];
+    te2.text = @"食べられてしまいます。";
+    te2.position = CGPointMake(self.frame.size.width / 2 +10,
+                              self.frame.size.height / 2 + 100);
+    te2.fontSize = 32;
+    te2.fontColor = [UIColor blackColor];
+    
+    EASY = [SKLabelNode labelNodeWithFontNamed:@"Baskerville-Bold"];
+    EASY.text = @"EASY";
+    EASY.position = CGPointMake(self.frame.size.width / 2  - 80,
+                              self.frame.size.height / 2 - 280 );
+    EASY.fontSize = 38;
+    EASY.fontColor = [UIColor redColor];
+    
+    SKLabelNode *te4 = [SKLabelNode labelNodeWithFontNamed:@"Baskerville-Bold"];
+    te4.text = @"難易度を選択";
+    te4.position = CGPointMake(self.frame.size.width / 2 ,
+                              self.frame.size.height / 2 - 200);
+    te4.fontSize = 38;
+    te4.fontColor = [UIColor redColor];
+    
+    HARD = [SKLabelNode labelNodeWithFontNamed:@"Baskerville-Bold"];
+    HARD.text = @"HARD";
+    HARD.position = CGPointMake(self.frame.size.width / 2  + 80,
+                               self.frame.size.height / 2 - 280 );
+    HARD.fontSize = 38;
+    HARD.fontColor = [UIColor redColor];
+
+    
+
+    [self addChild:zako];
+    [self addChild:te];
+    [self addChild:te2];
+    [self addChild:EASY];
+    [self addChild:te4];
+    [self addChild:HARD];
+    self.backgroundColor = [UIColor whiteColor];
+
+}
+
+- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
+    
+    for (UITouch *touch in touches) {
+        CGPoint location = [touch locationInNode:self];
+        if([EASY containsPoint:location]) {
+            SKScene *scene = [[GameScene alloc]initWithSize:self.size];
+            SKTransition *tr = [SKTransition fadeWithDuration:0.5];
+            [self.view presentScene:scene transition:tr];
+            
+            
+        } else if ([HARD containsPoint:location]) {
+            
+            SKScene *scene = [[Hard alloc]initWithSize:self.size];
+            SKTransition *tr = [SKTransition fadeWithDuration:0.5];
+            [self.view presentScene:scene transition:tr];
+            
+        }
+    }
+
+    
+}
+
+@end
